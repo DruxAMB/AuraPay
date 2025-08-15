@@ -2,10 +2,36 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Modal } from '../../components/Modal';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const Settings = () => {
+  const { user, isAuthenticated, logout } = useAuth();
+  
+  // Get user display name from Privy authentication
+  const getUserDisplayName = () => {
+    // Try to get email from direct property
+    if (user?.email && typeof user.email === 'string') {
+      return user.email.split('@')[0];
+    }
+    
+    // Try to get email from linkedAccounts (common in Privy)
+    const emailAccount = user?.linkedAccounts?.find(
+      (account: any) => account.type === 'email'
+    );
+    if (emailAccount?.address && typeof emailAccount.address === 'string') {
+      return emailAccount.address.split('@')[0];
+    }
+    
+    // Try to get name from user object
+    if (user?.name && typeof user.name === 'string') {
+      return user.name;
+    }
+    
+    return 'User';
+  };
+
   const [settings, setSettings] = useState({
-    name: 'John Doe',
+    name: getUserDisplayName(),
     dailyLimit: '1000',
     monthlyLimit: '10000',
     panicMode: true,
@@ -19,6 +45,23 @@ export const Settings = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Update display name when user data changes
+  useEffect(() => {
+    if (user) {
+      setSettings(prev => ({
+        ...prev,
+        name: getUserDisplayName()
+      }));
+    }
+  }, [user]);
 
   // Sync panic mode from URL state if available
   useEffect(() => {
