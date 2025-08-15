@@ -1,22 +1,22 @@
-import { USDC_CONTRACTS } from '../config/privy';
+// import { USDC_CONTRACTS } from '../config/privy';
 
 // USDC contract ABI (minimal for balance checking)
-const USDC_ABI = [
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', type: 'uint8' }],
-    type: 'function',
-  },
-] as const;
+// const USDC_ABI = [
+//   {
+//     constant: true,
+//     inputs: [{ name: '_owner', type: 'address' }],
+//     name: 'balanceOf',
+//     outputs: [{ name: 'balance', type: 'uint256' }],
+//     type: 'function',
+//   },
+//   {
+//     constant: true,
+//     inputs: [],
+//     name: 'decimals',
+//     outputs: [{ name: '', type: 'uint8' }],
+//     type: 'function',
+//   },
+// ] as const;
 
 /**
  * Fetch USDC balance for a given wallet address on Avalanche
@@ -25,8 +25,8 @@ const USDC_ABI = [
  * @returns Promise<string> - The formatted USDC balance
  */
 export async function fetchUSDCBalance(
-  walletAddress: string,
-  isTestnet: boolean = false
+  // walletAddress: string,
+  // isTestnet: boolean = false
 ): Promise<string> {
   try {
     // For now, return a mock balance since we need proper RPC setup

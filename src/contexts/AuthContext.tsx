@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { fetchUSDCBalance, formatUSDCAmount } = await import('../utils/usdcBalance');
       
       // Fetch balance from Avalanche network
-      const balance = await fetchUSDCBalance(walletAddress, false); // Use mainnet
+      const balance = await fetchUSDCBalance(); // Use mainnet
       const formattedBalance = formatUSDCAmount(balance);
       
       setUsdcBalance(formattedBalance);
