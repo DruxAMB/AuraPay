@@ -5,7 +5,7 @@ import { Modal } from '../../components/Modal';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const Settings = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, walletAddress } = useAuth();
   
   // Get user display name from Privy authentication
   const getUserDisplayName = () => {
@@ -128,15 +128,88 @@ export const Settings = () => {
         {/* Profile */}
         <div className="bg-surface-primary border border-border/20 p-6 shadow-sm rounded-xl">
           <h2 className="text-sm font-semibold text-text-secondary mb-4">Profile</h2>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
-            Display Name
-          </label>
-          <input
-            type="text"
-            value={settings.name}
-            onChange={(e) => setSettings({ ...settings, name: e.target.value })}
-            className="input-field"
-          />
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Display Name
+              </label>
+              <input
+                type="text"
+                value={settings.name}
+                onChange={(e) => setSettings({ ...settings, name: e.target.value })}
+                className="input-field"
+              />
+            </div>
+
+            {/* Wallet Address Display */}
+            {walletAddress && (
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Wallet Address
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={walletAddress}
+                    readOnly
+                    className="input-field pr-20 bg-surface-secondary cursor-default"
+                    title={walletAddress}
+                  />
+                  <button
+                    onClick={() => navigator.clipboard.writeText(walletAddress)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 text-xs bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+                    title="Copy wallet address"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="text-xs text-text-secondary mt-1">
+                  {user?.linkedAccounts?.find((account: any) => account.type === 'email') 
+                    ? 'Embedded wallet created by Privy' 
+                    : 'Connected external wallet'
+                  }
+                </p>
+              </div>
+            )}
+
+            {/* Authentication Method Display */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Authentication Method
+              </label>
+              <div className="bg-surface-secondary border border-border/20 rounded-xl p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-text-primary">
+                      {(() => {
+                        const emailAccount = user?.linkedAccounts?.find((account: any) => account.type === 'email');
+                        if (emailAccount) {
+                          return `Email: ${emailAccount.address}`;
+                        }
+                        if (user?.wallet) {
+                          return 'External Wallet';
+                        }
+                        return 'Unknown';
+                      })()}
+                    </div>
+                    <div className="text-xs text-text-secondary">
+                      {user?.linkedAccounts?.find((account: any) => account.type === 'email') 
+                        ? 'Privy embedded wallet with email authentication' 
+                        : 'Connected via wallet provider (MetaMask, WalletConnect, etc.)'
+                      }
+                    </div>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="px-3 py-1 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Card Limits */}

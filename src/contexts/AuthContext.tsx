@@ -46,7 +46,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user, 
     login, 
     logout: privyLogout,
-    connectWallet: privyConnectWallet 
+    connectWallet: privyConnectWallet,
+    createWallet 
   } = usePrivy();
   
   const { wallets } = useWallets();
@@ -86,14 +87,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
   
-  // Refresh balance when wallet connects
+  // Handle wallet creation and balance refresh
   useEffect(() => {
-    if (authenticated && walletAddress) {
-      refreshBalance();
+    if (authenticated) {
+      console.log('User authenticated, checking wallet status...');
+      console.log('Wallets array:', wallets);
+      console.log('User object:', user);
+      
+      // If user is authenticated but has no wallet, try to create one
+      if (wallets.length === 0 && user) {
+        console.log('No wallets found, attempting to create embedded wallet...');
+        createWallet()
+          .then(() => {
+            console.log('Embedded wallet creation initiated');
+          })
+          .catch((error) => {
+            console.error('Failed to create embedded wallet:', error);
+          });
+      }
+      
+      if (walletAddress) {
+        refreshBalance();
+      } else {
+        setUsdcBalance('0.00');
+      }
     } else {
       setUsdcBalance('0.00');
     }
-  }, [authenticated, walletAddress]);
+  }, [authenticated, walletAddress, wallets, user, createWallet]);
   
   // Enhanced logout that clears local state
   const logout = async () => {
