@@ -1,0 +1,139 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useWalletClient } from 'wagmi';
+
+interface AuthContextType {
+  // User authentication state
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user: any;
+  
+  // Wallet state
+  wallet: any;
+  walletAddress: string | null;
+  isWalletConnected: boolean;
+  
+  // USDC balance
+  usdcBalance: string;
+  isLoadingBalance: boolean;
+  
+  // Auth methods
+  login: () => void;
+  logout: () => void;
+  connectWallet: () => void;
+  
+  // Wallet operations
+  refreshBalance: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+interface AuthProviderProps {
+  children: React.ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const { 
+    ready, 
+    authenticated, 
+    user, 
+    login, 
+    logout: privyLogout,
+    connectWallet: privyConnectWallet 
+  } = usePrivy();
+  
+  const { wallets } = useWallets();
+  const { data: walletClient } = useWalletClient();
+  
+  // Local state
+  const [usdcBalance, setUsdcBalance] = useState<string>('0.00');
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  
+  // Get the primary wallet
+  const wallet = wallets[0];
+  const walletAddress = wallet?.address || null;
+  const isWalletConnected = !!wallet && wallet.connectorType !== 'embedded';
+  
+  // Fetch USDC balance
+  const refreshBalance = async () => {
+    if (!walletAddress) {
+      setUsdcBalance('0.00');
+      return;
+    }
+    
+    setIsLoadingBalance(true);
+    try {
+      // Import the balance fetching utility
+      const { fetchUSDCBalance, formatUSDCAmount } = await import('../utils/usdcBalance');
+      
+      // Fetch balance from Avalanche network
+      const balance = await fetchUSDCBalance(walletAddress, false); // Use mainnet
+      const formattedBalance = formatUSDCAmount(balance);
+      
+      setUsdcBalance(formattedBalance);
+      
+    } catch (error) {
+      console.error('Error fetching USDC balance:', error);
+      setUsdcBalance('0.00');
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
+  
+  // Refresh balance when wallet connects
+  useEffect(() => {
+    if (authenticated && walletAddress) {
+      refreshBalance();
+    } else {
+      setUsdcBalance('0.00');
+    }
+  }, [authenticated, walletAddress]);
+  
+  // Enhanced logout that clears local state
+  const logout = async () => {
+    setUsdcBalance('0.00');
+    setIsLoadingBalance(false);
+    await privyLogout();
+  };
+  
+  // Enhanced wallet connection
+  const connectWallet = () => {
+    privyConnectWallet();
+  };
+  
+  const contextValue: AuthContextType = {
+    // Authentication state
+    isAuthenticated: ready && authenticated,
+    isLoading: !ready,
+    user,
+    
+    // Wallet state
+    wallet,
+    walletAddress,
+    isWalletConnected,
+    
+    // USDC balance
+    usdcBalance,
+    isLoadingBalance,
+    
+    // Methods
+    login,
+    logout,
+    connectWallet,
+    refreshBalance,
+  };
+  
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};

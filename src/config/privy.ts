@@ -1,0 +1,98 @@
+import { PrivyClientConfig } from '@privy-io/react-auth';
+
+export const privyConfig: PrivyClientConfig = {
+  // Appearance customization to match AuraPay's dark theme
+  appearance: {
+    theme: 'dark',
+    accentColor: '#00AFFF',
+    logo: 'https://your-logo-url.com/logo.png', // Replace with actual logo
+    walletChainType: 'ethereum-only',
+    showWalletLoginFirst: true,
+  },
+  
+  // Embedded wallet configuration
+  embeddedWallets: {
+    createOnLogin: 'users-without-wallets',
+    requireUserPasswordOnCreate: true,
+  },
+
+  // Login methods configuration
+  loginMethods: [
+    'wallet',
+    'email',
+    'google',
+    'twitter',
+    'discord',
+  ],
+
+  // Supported chains - Avalanche mainnet and testnet
+  supportedChains: [
+    {
+      id: 43114, // Avalanche C-Chain
+      name: 'Avalanche',
+      network: 'avalanche',
+      nativeCurrency: {
+        name: 'Avalanche',
+        symbol: 'AVAX',
+        decimals: 18,
+      },
+      rpcUrls: {
+        default: {
+          http: ['https://api.avax.network/ext/bc/C/rpc'],
+        },
+        public: {
+          http: ['https://api.avax.network/ext/bc/C/rpc'],
+        },
+      },
+      blockExplorers: {
+        default: {
+          name: 'SnowTrace',
+          url: 'https://snowtrace.io',
+        },
+      },
+    },
+    {
+      id: 43113, // Avalanche Fuji Testnet
+      name: 'Avalanche Fuji',
+      network: 'avalanche-fuji',
+      nativeCurrency: {
+        name: 'Avalanche',
+        symbol: 'AVAX',
+        decimals: 18,
+      },
+      rpcUrls: {
+        default: {
+          http: ['https://api.avax-test.network/ext/bc/C/rpc'],
+        },
+        public: {
+          http: ['https://api.avax-test.network/ext/bc/C/rpc'],
+        },
+      },
+      blockExplorers: {
+        default: {
+          name: 'SnowTrace Testnet',
+          url: 'https://testnet.snowtrace.io',
+        },
+      },
+    },
+  ],
+
+  // Default chain
+  defaultChain: {
+    id: 43114,
+    name: 'Avalanche',
+  },
+};
+
+// USDC contract addresses on Avalanche
+export const USDC_CONTRACTS = {
+  mainnet: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // USDC on Avalanche
+  testnet: '0x5425890298aed601595a70AB815c96711a31Bc65', // USDC on Fuji testnet
+} as const;
+
+// Environment variables
+export const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+
+if (!PRIVY_APP_ID) {
+  throw new Error('PRIVY_APP_ID is required. Please set VITE_PRIVY_APP_ID or NEXT_PUBLIC_PRIVY_APP_ID in your environment variables.');
+}

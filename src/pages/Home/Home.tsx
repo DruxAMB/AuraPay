@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useNavigateWithLoading } from '../../hooks/useNavigateWithLoading';
-import { Cog6ToothIcon, ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, ArrowDownIcon, ArrowUpIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { Modal } from '../../components/Modal';
 import { TransactionDetailsModal, type TransactionDetails } from '../../components/TransactionDetailsModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Animation variants
 const containerVariants = {
@@ -99,6 +100,24 @@ export const Home = () => {
   const navigate = useNavigate();
   const navigateWithLoading = useNavigateWithLoading();
   const location = useLocation();
+  
+  // Authentication context
+  const { 
+    isAuthenticated, 
+    user, 
+    walletAddress, 
+    usdcBalance, 
+    isLoadingBalance, 
+    logout, 
+    refreshBalance 
+  } = useAuth();
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, navigate]);
 
   // Sync panic mode from Settings page
   useEffect(() => {
@@ -256,17 +275,36 @@ export const Home = () => {
             variants={itemVariants}
           >
             <div>
-              <h1 className="text-lg font-medium text-text-primary">Hi, User</h1>
+              <h1 className="text-lg font-medium text-text-primary">
+                Hi, {user?.email?.split('@')[0] || user?.wallet?.address?.slice(0, 6) || 'User'}
+              </h1>
+              {walletAddress && (
+                <p className="text-xs text-text-secondary mt-1">
+                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                </p>
+              )}
             </div>
-            <motion.button 
-              onClick={handleSettings}
-              className="w-12 h-12 bg-surface border border-border rounded-xl shadow-sm flex items-center justify-center hover:shadow-md transition-all duration-300 hover:border-border/60"
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <Cog6ToothIcon className="w-6 h-6 text-text-primary" />
-            </motion.button>
+            <div className="flex items-center gap-3">
+              <motion.button 
+                onClick={logout}
+                className="w-12 h-12 bg-surface border border-border rounded-xl shadow-sm flex items-center justify-center hover:shadow-md transition-all duration-300 hover:border-border/60 hover:bg-red-500/10 hover:border-red-500/20"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                title="Logout"
+              >
+                <ArrowRightOnRectangleIcon className="w-6 h-6 text-text-primary hover:text-red-400" />
+              </motion.button>
+              <motion.button 
+                onClick={handleSettings}
+                className="w-12 h-12 bg-surface border border-border rounded-xl shadow-sm flex items-center justify-center hover:shadow-md transition-all duration-300 hover:border-border/60"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <Cog6ToothIcon className="w-6 h-6 text-text-primary" />
+              </motion.button>
+            </div>
           </motion.div>
 
           {/* Panic Mode Banner */}
@@ -295,8 +333,27 @@ export const Home = () => {
               <span className="text-sm text-text-secondary">Available Balance</span>
             </div>
             <div className="text-4xl font-bold text-text-primary mb-1">
-              {isPanicMode ? 'Insufficient funds' : '1,234.56 USDC'}
+              {isPanicMode ? 'Insufficient funds' : (
+                isLoadingBalance ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  `${usdcBalance} USDC`
+                )
+              )}
             </div>
+            {!isPanicMode && walletAddress && (
+              <motion.button
+                onClick={refreshBalance}
+                className="text-xs text-text-secondary hover:text-primary transition-colors mt-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Refresh Balance
+              </motion.button>
+            )}
           </motion.div>
 
           {/* Action Buttons */}
