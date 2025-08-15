@@ -1,4 +1,4 @@
-import { PrivyClientConfig } from '@privy-io/react-auth';
+import type { PrivyClientConfig } from '@privy-io/react-auth';
 
 export const privyConfig: PrivyClientConfig = {
   // Appearance customization to match AuraPay's dark theme
@@ -79,8 +79,19 @@ export const privyConfig: PrivyClientConfig = {
 
   // Default chain
   defaultChain: {
-    id: 43114,
-    name: 'Avalanche',
+      id: 43114,
+      name: 'Avalanche',
+      nativeCurrency: {
+          name: '',
+          symbol: '',
+          decimals: 0
+      },
+      rpcUrls: {
+          default: {
+              http: [],
+              webSocket: undefined
+          }
+      }
   },
 };
 
