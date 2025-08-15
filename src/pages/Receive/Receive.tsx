@@ -13,6 +13,8 @@ export const Receive = () => {
     receiver: 'John Doe',
   });
   const [pin, setPin] = useState('');
+  const [nfcSupported, setNfcSupported] = useState(false);
+  const [nfcReading, setNfcReading] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated, walletAddress } = useAuth();
 
@@ -22,6 +24,76 @@ export const Receive = () => {
       navigate('/auth');
     }
   }, [isAuthenticated, navigate]);
+
+  // Check NFC support
+  useEffect(() => {
+    if ('NDEFReader' in window) {
+      setNfcSupported(true);
+    }
+  }, []);
+
+  // Real NFC card reading function
+  const readNFCCard = async () => {
+    if (!('NDEFReader' in window)) {
+      alert('NFC is not supported on this device/browser');
+      return;
+    }
+
+    try {
+      setNfcReading(true);
+      const ndef = new (window as any).NDEFReader();
+      
+      // Request NFC permission
+      await ndef.scan();
+      
+      console.log('NFC scan started. Tap your NFC card...');
+      
+      ndef.addEventListener('reading', ({ message, serialNumber }: any) => {
+        console.log('NFC card detected:', serialNumber);
+        console.log('NFC message:', message);
+        
+        // Process NFC card data
+        let cardData = null;
+        
+        for (const record of message.records) {
+          if (record.recordType === 'text') {
+            const textDecoder = new TextDecoder(record.encoding);
+            const cardInfo = textDecoder.decode(record.data);
+            cardData = cardInfo;
+            break;
+          } else if (record.recordType === 'url') {
+            cardData = new TextDecoder().decode(record.data);
+            break;
+          }
+        }
+        
+        // If card has data, use it; otherwise use serial number
+        const cardIdentifier = cardData || serialNumber;
+        
+        console.log('Card identifier:', cardIdentifier);
+        
+        // Store card info and proceed to PIN
+        setReceiveData(prev => ({ 
+          ...prev, 
+          receiver: `NFC Card (${cardIdentifier.slice(-8)})` 
+        }));
+        
+        setNfcReading(false);
+        setCurrentStep('card-pin');
+      });
+
+      ndef.addEventListener('readingerror', () => {
+        console.error('NFC reading error');
+        setNfcReading(false);
+        alert('Error reading NFC card. Please try again.');
+      });
+
+    } catch (error) {
+      console.error('NFC Error:', error);
+      setNfcReading(false);
+      alert('NFC permission denied or error occurred');
+    }
+  };
 
   const renderOptionsStep = () => (
     <div className="space-y-4">
@@ -130,14 +202,66 @@ export const Receive = () => {
     <div className="text-center">
       <div className="mb-6">
         <div className="text-3xl font-bold mb-4 text-text-primary">{receiveData.amount} USDC</div>
-        <div className="text-lg text-text-secondary mb-8">Waiting to Scan NFC Card...</div>
-        <div className="w-16 h-16 border-2 border-border border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-        <button
-          onClick={() => setCurrentStep('card-pin')}
-          className="text-text-primary text-sm font-medium"
-        >
-          Open Camera to Scan QR
-        </button>
+        <div className="text-lg text-text-secondary mb-8">Waiting for NFC Card Tap...</div>
+        
+        {/* NFC Animation */}
+        <div className="relative mb-8">
+          <div className="w-24 h-24 border-2 border-blue-500/30 rounded-full mx-auto flex items-center justify-center">
+            <CreditCardIcon className="w-12 h-12 text-blue-400" />
+          </div>
+          <div className="absolute inset-0 w-24 h-24 border-2 border-blue-500/50 rounded-full mx-auto animate-ping"></div>
+          <div className="absolute inset-0 w-32 h-32 border border-blue-500/20 rounded-full mx-auto animate-pulse"></div>
+        </div>
+        
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary mb-4">
+            Tap your NFC card or use one of the simulation options below:
+          </p>
+          
+          {/* Real NFC and Simulation Options */}
+          <div className="space-y-3">
+            {nfcSupported && (
+              <button
+                onClick={readNFCCard}
+                disabled={nfcReading}
+                className={`w-full py-3 px-4 rounded-xl transition-colors ${
+                  nfcReading 
+                    ? 'bg-blue-500/20 border border-blue-500/40 text-blue-300 cursor-not-allowed'
+                    : 'bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20'
+                }`}
+              >
+                {nfcReading ? '📡 Reading NFC Card...' : '📱 Read Real NFC Card'}
+              </button>
+            )}
+            
+            <button
+              onClick={() => {
+                // Simulate successful NFC tap after short delay
+                setTimeout(() => setCurrentStep('card-pin'), 800);
+              }}
+              className="w-full bg-green-500/10 border border-green-500/20 text-green-400 py-3 px-4 rounded-xl hover:bg-green-500/20 transition-colors"
+            >
+              🟢 Simulate Successful NFC Tap
+            </button>
+            
+            <button
+              onClick={() => setCurrentStep('card-pin')}
+              className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 py-3 px-4 rounded-xl hover:bg-blue-500/20 transition-colors"
+            >
+              📱 Simulate QR Code Scan
+            </button>
+            
+            <button
+              onClick={() => {
+                // Simulate failed NFC read
+                alert('NFC read failed. Please try again.');
+              }}
+              className="w-full bg-red-500/10 border border-red-500/20 text-red-400 py-3 px-4 rounded-xl hover:bg-red-500/20 transition-colors"
+            >
+              🔴 Simulate Failed NFC Read
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
