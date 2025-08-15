@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { useWalletClient } from 'wagmi';
 
 interface AuthContextType {
   // User authentication state
@@ -51,7 +50,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   } = usePrivy();
   
   const { wallets } = useWallets();
-  const { data: walletClient } = useWalletClient();
   
   // Local state
   const [usdcBalance, setUsdcBalance] = useState<string>('0.00');

@@ -119,6 +119,16 @@ export const Home = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Debug: Log user data to see what Privy provides
+  useEffect(() => {
+    if (user) {
+      console.log('Privy user object:', user);
+      console.log('User email:', user.email);
+      console.log('User wallet:', user.wallet);
+      console.log('User linkedAccounts:', user.linkedAccounts);
+    }
+  }, [user]);
+
   // Sync panic mode from Settings page
   useEffect(() => {
     if (location.state?.panicMode !== undefined) {
@@ -276,7 +286,37 @@ export const Home = () => {
           >
             <div>
               <h1 className="text-lg font-medium text-text-primary">
-                Hi, {user?.email?.split('@')[0] || user?.wallet?.address?.slice(0, 6) || 'User'}
+                Hi, {(() => {
+                  // Try to get email from direct property
+                  if (user?.email && typeof user.email === 'string') {
+                    return user.email.split('@')[0];
+                  }
+                  
+                  // Try to get email from linkedAccounts (common in Privy)
+                  const emailAccount = user?.linkedAccounts?.find(
+                    (account: any) => account.type === 'email'
+                  );
+                  if (emailAccount?.address && typeof emailAccount.address === 'string') {
+                    return emailAccount.address.split('@')[0];
+                  }
+                  
+                  // Try to get name from user object
+                  if (user?.name && typeof user.name === 'string') {
+                    return user.name;
+                  }
+                  
+                  // Fallback to wallet address
+                  if (user?.wallet?.address && typeof user.wallet.address === 'string') {
+                    return user.wallet.address.slice(0, 6);
+                  }
+                  
+                  // Fallback to context wallet address
+                  if (walletAddress) {
+                    return walletAddress.slice(0, 6);
+                  }
+                  
+                  return 'User';
+                })()}
               </h1>
               {walletAddress && (
                 <p className="text-xs text-text-secondary mt-1">

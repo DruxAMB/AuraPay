@@ -102,8 +102,13 @@ export const USDC_CONTRACTS = {
 } as const;
 
 // Environment variables
-export const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+export const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || 'cmect48v8011jla0c6m50q4ig';
+
+// Note: If you get "OAuth client was not found" error, you need to:
+// 1. Create a new app at https://dashboard.privy.io/
+// 2. Add http://localhost:5173 to allowed origins
+// 3. Update VITE_PRIVY_APP_ID in your .env file with the new App ID
 
 if (!PRIVY_APP_ID) {
-  throw new Error('PRIVY_APP_ID is required. Please set VITE_PRIVY_APP_ID or NEXT_PUBLIC_PRIVY_APP_ID in your environment variables.');
+  throw new Error('PRIVY_APP_ID is required. Please set VITE_PRIVY_APP_ID in your environment variables.');
 }
