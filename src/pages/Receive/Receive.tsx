@@ -272,16 +272,53 @@ export const Receive = () => {
         <p className="text-sm text-text-secondary mb-4">
           Entering your PIN will authorise a transfer of {receiveData.amount} USDC to {receiveData.receiver}.
         </p>
-        <div className="flex justify-center gap-3 mb-6">
+        <div className="flex justify-center gap-4 mb-8">
           {[0, 1, 2, 3].map((index) => (
             <div
               key={index}
-              className={`w-4 h-4 rounded-full border-2 ${
-                index < pin.length ? 'bg-surface border-border' : 'border-border/40'
+              className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
+                index < pin.length 
+                  ? 'bg-blue-500 border-blue-500 shadow-lg shadow-blue-500/30' 
+                  : 'border-gray-400 bg-transparent'
               }`}
             />
           ))}
         </div>
+        
+        {/* Virtual Keypad */}
+        <div className="grid grid-cols-3 gap-4 max-w-xs mx-auto mb-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+            <button
+              key={num}
+              onClick={() => {
+                if (pin.length < 4) {
+                  setPin(pin + num.toString());
+                }
+              }}
+              className="w-16 h-16 bg-surface border border-border/20 rounded-xl text-text-primary text-xl font-semibold hover:bg-surface-secondary transition-colors"
+            >
+              {num}
+            </button>
+          ))}
+          <div></div>
+          <button
+            onClick={() => {
+              if (pin.length < 4) {
+                setPin(pin + '0');
+              }
+            }}
+            className="w-16 h-16 bg-surface border border-border/20 rounded-xl text-text-primary text-xl font-semibold hover:bg-surface-secondary transition-colors"
+          >
+            0
+          </button>
+          <button
+            onClick={() => setPin(pin.slice(0, -1))}
+            className="w-16 h-16 bg-surface border border-border/20 rounded-xl text-text-primary text-lg hover:bg-surface-secondary transition-colors flex items-center justify-center"
+          >
+            ⌫
+          </button>
+        </div>
+        
         <input
           type="password"
           value={pin}
