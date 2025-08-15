@@ -15,6 +15,9 @@ export const Receive = () => {
   const [pin, setPin] = useState('');
   const [nfcSupported, setNfcSupported] = useState(false);
   const [nfcReading, setNfcReading] = useState(false);
+  const [nfcError, setNfcError] = useState('');
+  const [transactionStatus, setTransactionStatus] = useState('');
+  const [simulatedTxHash, setSimulatedTxHash] = useState('');
   const navigate = useNavigate();
   const { isAuthenticated, walletAddress } = useAuth();
 
@@ -32,64 +35,107 @@ export const Receive = () => {
     }
   }, []);
 
+  // Simulate transaction processing (based on your Avalanche testnet example)
+  const simulateTransaction = async (cardData: any) => {
+    setTransactionStatus('⏳ Processing transaction...');
+    
+    // Generate realistic transaction hash (like your testnet example)
+    const txHash = `0x${Math.random().toString(16).substr(2, 64)}`;
+    setSimulatedTxHash(txHash);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Simulate transaction confirmation (90% success rate)
+    const isSuccess = Math.random() > 0.1;
+    
+    if (isSuccess) {
+      setTransactionStatus(`✅ Transaction confirmed! Hash: ${txHash.slice(0, 10)}...`);
+      
+      // Optional: Send to backend for persistence
+      try {
+        // Uncomment when backend is ready:
+        // await fetch('/api/nfc/tap', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({
+        //     ...cardData,
+        //     transaction_hash: txHash,
+        //     status: 'completed'
+        //   })
+        // });
+        
+        console.log('Transaction simulated successfully:', {
+          ...cardData,
+          transaction_hash: txHash,
+          status: 'completed',
+          block_number: Math.floor(Math.random() * 1000000) + 5000000,
+          gas_used: '21000',
+          confirmations: 1
+        });
+      } catch (error) {
+        console.error('Backend error:', error);
+      }
+      
+      return true;
+    } else {
+      setTransactionStatus('❌ Transaction failed - please try again');
+      return false;
+    }
+  };
+
   // Real NFC card reading function
   const readNFCCard = async () => {
     if (!('NDEFReader' in window)) {
-      alert('NFC is not supported on this device/browser');
+      alert('NFC is not supported on this device');
       return;
     }
 
+    setNfcReading(true);
+    setNfcError('');
+
     try {
-      setNfcReading(true);
       const ndef = new (window as any).NDEFReader();
-      
-      // Request NFC permission
       await ndef.scan();
       
-      console.log('NFC scan started. Tap your NFC card...');
-      
       ndef.addEventListener('reading', ({ message, serialNumber }: any) => {
-        console.log('NFC card detected:', serialNumber);
-        console.log('NFC message:', message);
+        console.log('NFC card detected:', { serialNumber, message });
         
-        // Process NFC card data
-        let cardData = null;
+        // Process the NFC card data
+        const cardData = {
+          cardIdentifier: serialNumber,
+          cardName: `NFC Card ${serialNumber?.slice(-4)}`,
+          amount: receiveData.amount,
+          type: 'received'
+        };
         
-        for (const record of message.records) {
-          if (record.recordType === 'text') {
-            const textDecoder = new TextDecoder(record.encoding);
-            const cardInfo = textDecoder.decode(record.data);
-            cardData = cardInfo;
-            break;
-          } else if (record.recordType === 'url') {
-            cardData = new TextDecoder().decode(record.data);
-            break;
-          }
-        }
+        // Optional: Send to backend
+        // fetch('/api/nfc/tap', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(cardData)
+        // });
         
-        // If card has data, use it; otherwise use serial number
-        const cardIdentifier = cardData || serialNumber;
-        
-        console.log('Card identifier:', cardIdentifier);
+        console.log('Processing NFC transaction:', cardData);
         
         // Store card info and proceed to PIN
         setReceiveData(prev => ({ 
           ...prev, 
-          receiver: `NFC Card (${cardIdentifier.slice(-8)})` 
+          receiver: `NFC Card (${serialNumber?.slice(-8)})` 
         }));
         
-        setNfcReading(false);
         setCurrentStep('card-pin');
+        setNfcReading(false);
       });
 
       ndef.addEventListener('readingerror', () => {
-        console.error('NFC reading error');
+        setNfcError('Failed to read NFC card. Please try again.');
         setNfcReading(false);
-        alert('Error reading NFC card. Please try again.');
       });
 
     } catch (error) {
       console.error('NFC Error:', error);
+      setNfcError('NFC permission denied or not available');
       setNfcReading(false);
       alert('NFC permission denied or error occurred');
     }
@@ -235,9 +281,27 @@ export const Receive = () => {
             )}
             
             <button
-              onClick={() => {
-                // Simulate successful NFC tap after short delay
-                setTimeout(() => setCurrentStep('card-pin'), 800);
+              onClick={async () => {
+                // Simulate NFC card data
+                const cardData = {
+                  cardIdentifier: `nfc_${Date.now()}`,
+                  cardName: 'Simulated NFC Card',
+                  amount: receiveData.amount,
+                  type: 'received'
+                };
+                
+                setReceiveData(prev => ({ 
+                  ...prev, 
+                  receiver: 'Simulated NFC Card' 
+                }));
+                
+                // Move to PIN step first
+                setCurrentStep('card-pin');
+                
+                // Then simulate transaction processing
+                setTimeout(async () => {
+                  await simulateTransaction(cardData);
+                }, 1000);
               }}
               className="w-full bg-green-500/10 border border-green-500/20 text-green-400 py-3 px-4 rounded-xl hover:bg-green-500/20 transition-colors"
             >
@@ -267,11 +331,36 @@ export const Receive = () => {
   );
 
   const renderCardPinStep = () => (
-    <div className="text-center">
+    <div className="text-center w-fit mx-auto">
       <div className="mb-6">
         <p className="text-sm text-text-secondary mb-4">
           Entering your PIN will authorise a transfer of {receiveData.amount} USDC to {receiveData.receiver}.
         </p>
+        
+        {/* Transaction Status Display */}
+        {transactionStatus && (
+          <div className={`mb-4 p-3 rounded-xl text-sm ${
+            transactionStatus.includes('✅') 
+              ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+              : transactionStatus.includes('❌')
+              ? 'bg-red-500/10 border border-red-500/20 text-red-400'
+              : 'bg-blue-500/10 border border-blue-500/20 text-blue-400'
+          }`}>
+            {transactionStatus}
+            {simulatedTxHash && (
+              <div className="mt-2 text-xs font-mono break-all opacity-70">
+                TX: {simulatedTxHash}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* NFC Error Display */}
+        {nfcError && (
+          <div className="mb-4 p-3 rounded-xl text-sm bg-red-500/10 border border-red-500/20 text-red-400">
+            {nfcError}
+          </div>
+        )}
         <div className="flex justify-center gap-4 mb-8">
           {[0, 1, 2, 3].map((index) => (
             <div
