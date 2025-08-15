@@ -119,15 +119,7 @@ export const Home = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Debug: Log user data to see what Privy provides
-  useEffect(() => {
-    if (user) {
-      console.log('Privy user object:', user);
-      console.log('User email:', user.email);
-      console.log('User wallet:', user.wallet);
-      console.log('User linkedAccounts:', user.linkedAccounts);
-    }
-  }, [user]);
+
 
   // Sync panic mode from Settings page
   useEffect(() => {

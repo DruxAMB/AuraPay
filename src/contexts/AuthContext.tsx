@@ -90,17 +90,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Handle wallet creation and balance refresh
   useEffect(() => {
     if (authenticated) {
-      console.log('User authenticated, checking wallet status...');
-      console.log('Wallets array:', wallets);
-      console.log('User object:', user);
-      
       // If user is authenticated but has no wallet, try to create one
       if (wallets.length === 0 && user) {
-        console.log('No wallets found, attempting to create embedded wallet...');
         createWallet()
-          .then(() => {
-            console.log('Embedded wallet creation initiated');
-          })
           .catch((error) => {
             console.error('Failed to create embedded wallet:', error);
           });
