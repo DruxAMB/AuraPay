@@ -1,23 +1,4 @@
-// Real Avalanche USDC transaction utilities
-
-// USDC contract ABI (minimal for transactions)
-const USDC_ABI = [
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', type: 'uint8' }],
-    type: 'function',
-  },
-  {
-    constant: false,
+// Real Avalanche AVAX transaction utilities
 
 // Avalanche network configuration
 const AVALANCHE_CONFIG = {
@@ -48,11 +29,11 @@ export interface TransactionResult {
 }
 
 /**
- * Send USDC transaction on Avalanche network
+ * Send native AVAX transaction on Avalanche network
  * @param params - Transaction parameters
  * @returns Promise<TransactionResult> - Transaction result with hash
  */
-export async function sendUSDCTransaction(params: TransactionParams): Promise<TransactionResult> {
+export async function sendAVAXTransaction(params: TransactionParams): Promise<TransactionResult> {
   try {
     // Check if MetaMask is available
     if (!window.ethereum) {
@@ -103,30 +84,21 @@ export async function sendUSDCTransaction(params: TransactionParams): Promise<Tr
 
     const web3 = new Web3(window.ethereum);
     
-    // Create contract instance
-    const contract = new web3.eth.Contract(USDC_ABI, config.usdcContract);
-    
-    // Get decimals for proper amount conversion
-    const decimals = await contract.methods.decimals().call();
-    
-    // Convert amount to wei (USDC has 6 decimals)
-    const amountWei = web3.utils.toWei(params.amount, 'mwei'); // mwei = 6 decimals
-    
-    // Prepare transaction data
-    const transactionData = contract.methods.transfer(params.to, amountWei).encodeABI();
+    // Convert amount to wei (AVAX has 18 decimals)
+    const amountWei = web3.utils.toWei(params.amount, 'ether');
     
     // Estimate gas
     const gasEstimate = await web3.eth.estimateGas({
       from: params.walletAddress,
-      to: config.usdcContract,
-      data: transactionData,
+      to: params.to,
+      value: amountWei,
     });
     
     // Send transaction
     const transactionParameters = {
       from: params.walletAddress,
-      to: config.usdcContract,
-      data: transactionData,
+      to: params.to,
+      value: amountWei,
       gas: Math.ceil(Number(gasEstimate) * 1.2).toString(), // Add 20% buffer
     };
 
@@ -135,7 +107,7 @@ export async function sendUSDCTransaction(params: TransactionParams): Promise<Tr
       params: [transactionParameters],
     });
 
-    console.log('USDC transaction sent:', txHash);
+    console.log('AVAX transaction sent:', txHash);
 
     return {
       hash: txHash,
@@ -144,7 +116,7 @@ export async function sendUSDCTransaction(params: TransactionParams): Promise<Tr
     };
 
   } catch (error: any) {
-    console.error('USDC transaction error:', error);
+    console.error('AVAX transaction error:', error);
     
     let errorMessage = 'Transaction failed';
     if (error.code === 4001) {

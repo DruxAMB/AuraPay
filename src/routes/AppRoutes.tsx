@@ -8,6 +8,7 @@ import { Withdraw } from "../pages/Withdraw/Withdraw";
 import { Receive } from "../pages/Receive/Receive";
 import { Settings } from "../pages/Settings/Settings";
 import { Transactions } from "../pages/Transactions/Transactions";
+import { TestTransaction } from "../pages/TestTransaction";
 
 // Page transition variants
 const pageVariants = {
@@ -147,6 +148,20 @@ const AnimatedRoutes = () => {
               transition={pageTransition}
             >
               <Transactions />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/test-transaction"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <TestTransaction />
             </motion.div>
           }
         />
