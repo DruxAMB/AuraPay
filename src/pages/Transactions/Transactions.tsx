@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigateWithLoading } from '../../hooks/useNavigateWithLoading';
 import { ArrowLeftIcon, ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/24/outline';
 import { TransactionDetailsModal, type TransactionDetails } from '../../components/TransactionDetailsModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 type Transaction = {
   id: string;
@@ -47,7 +48,8 @@ const transactionItemVariants = {
   },
 };
 
-const mockTransactions: Transaction[] = [
+// Generate mock transactions with real wallet address
+const generateMockTransactions = (walletAddress: string): Transaction[] => [
   {
     id: '1',
     type: 'received',
@@ -69,10 +71,11 @@ const mockTransactions: Transaction[] = [
   {
     id: '3',
     type: 'received',
-    counterparty: '0x742d35...b4d8b6',
+    counterparty: `${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}`,
     amount: '+500.00',
     date: '2024-01-13',
     status: 'completed',
+    narration: 'Direct wallet transfer',
   },
   {
     id: '4',
@@ -86,19 +89,36 @@ const mockTransactions: Transaction[] = [
   {
     id: '5',
     type: 'sent',
-    counterparty: 'David Brown',
+    counterparty: `${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}`,
     amount: '-50.00',
     date: '2024-01-11',
     status: 'failed',
-    narration: 'Coffee',
+    narration: 'Failed transaction attempt',
   },
 ];
 
 export const Transactions = () => {
   const navigate = useNavigate();
   const navigateWithLoading = useNavigateWithLoading();
+  const { isAuthenticated, walletAddress } = useAuth();
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Generate transactions with real wallet address
+  useEffect(() => {
+    if (walletAddress) {
+      const mockTransactions = generateMockTransactions(walletAddress);
+      setTransactions(mockTransactions);
+    }
+  }, [walletAddress]);
 
   const handleTransactionClick = (transaction: Transaction) => {
     // Convert Transaction to TransactionDetails format
@@ -213,7 +233,7 @@ export const Transactions = () => {
           initial="hidden"
           animate="visible"
         >
-          {mockTransactions.map((transaction, index) => {
+          {transactions.map((transaction: Transaction, index: number) => {
             const c = computeClasses(transaction.status, transaction.type);
             return (
               <motion.div

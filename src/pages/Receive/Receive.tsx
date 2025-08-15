@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, QrCodeIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../../contexts/AuthContext';
 
 type ReceiveStep = 'options' | 'address' | 'card-amount' | 'card-waiting' | 'card-pin';
 
@@ -13,6 +14,14 @@ export const Receive = () => {
   });
   const [pin, setPin] = useState('');
   const navigate = useNavigate();
+  const { isAuthenticated, walletAddress } = useAuth();
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, navigate]);
 
   const renderOptionsStep = () => (
     <div className="space-y-4">
@@ -62,10 +71,21 @@ export const Receive = () => {
         <div className="bg-surface border border-border/20 rounded-xl p-3 mb-4">
           <div className="text-sm text-text-secondary mb-2">Wallet Address</div>
           <div className="font-mono text-sm break-all text-text-primary">
-            0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
+            {walletAddress || 'Loading wallet address...'}
           </div>
         </div>
-        <button className="text-text-primary text-sm font-medium">Copy Address</button>
+        <button 
+          onClick={() => {
+            if (walletAddress) {
+              navigator.clipboard.writeText(walletAddress);
+              // Could add toast notification here
+            }
+          }}
+          className="text-text-primary text-sm font-medium hover:text-text-secondary transition-colors"
+          disabled={!walletAddress}
+        >
+          {walletAddress ? 'Copy Address' : 'Loading...'}
+        </button>
       </div>
       
       <div className="bg-surface border border-border/40 rounded-xl p-4 text-left">
