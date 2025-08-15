@@ -12,8 +12,8 @@ interface AuthContextType {
   walletAddress: string | null;
   isWalletConnected: boolean;
   
-  // USDC balance
-  usdcBalance: string;
+  // AVAX balance
+  avaxBalance: string;
   isLoadingBalance: boolean;
   
   // Auth methods
@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { wallets } = useWallets();
   
   // Local state
-  const [usdcBalance, setUsdcBalance] = useState<string>('0.00');
+  const [avaxBalance, setAvaxBalance] = useState<string>('0.0000');
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   
   // Get the primary wallet
@@ -61,32 +61,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const walletAddress = wallet?.address || null;
   const isWalletConnected = !!wallet && wallet.connectorType !== 'embedded';
   
-  // Fetch USDC balance
+  // Fetch AVAX balance
   const refreshBalance = async () => {
     if (!walletAddress) {
-      setUsdcBalance('0.00');
+      setAvaxBalance('0.0000');
       return;
     }
     
     setIsLoadingBalance(true);
     try {
       // Import the balance fetching utility
-      const { fetchUSDCBalance, formatUSDCAmount } = await import('../utils/usdcBalance');
+      const { fetchAVAXBalance, formatAVAXAmount } = await import('../utils/avaxBalance');
       
-      // Fetch real USDC balance from Avalanche Fuji Testnet
-      console.log('Fetching real USDC balance for:', walletAddress);
-      const balance = await fetchUSDCBalance(walletAddress, true); // Use testnet
-      const formattedBalance = formatUSDCAmount(balance);
+      // Fetch real AVAX balance from Avalanche Fuji Testnet
+      console.log('Fetching real AVAX balance for:', walletAddress);
+      const balance = await fetchAVAXBalance(walletAddress, true); // Use testnet
+      const formattedBalance = formatAVAXAmount(balance);
       
-      console.log('Real USDC balance fetched:', balance, 'formatted:', formattedBalance);
-      setUsdcBalance(formattedBalance);
+      console.log('Real AVAX balance fetched:', balance, 'formatted:', formattedBalance);
+      setAvaxBalance(formattedBalance);
       
     } catch (error) {
-      console.error('Error fetching USDC balance:', error);
+      console.error('Error fetching AVAX balance:', error);
       // Fallback to mock balance on error
-      const mockBalance = (Math.random() * 1000).toFixed(2);
-      const { formatUSDCAmount } = await import('../utils/usdcBalance');
-      setUsdcBalance(formatUSDCAmount(mockBalance));
+      const mockBalance = (Math.random() * 10).toFixed(4);
+      const { formatAVAXAmount } = await import('../utils/avaxBalance');
+      setAvaxBalance(formatAVAXAmount(mockBalance));
     } finally {
       setIsLoadingBalance(false);
     }
@@ -106,16 +106,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (walletAddress) {
         refreshBalance();
       } else {
-        setUsdcBalance('0.00');
+        setAvaxBalance('0.0000');
       }
     } else {
-      setUsdcBalance('0.00');
+      setAvaxBalance('0.0000');
     }
   }, [authenticated, walletAddress, wallets, user, createWallet]);
   
   // Enhanced logout that clears local state
   const logout = async () => {
-    setUsdcBalance('0.00');
+    setAvaxBalance('0.0000');
     setIsLoadingBalance(false);
     await privyLogout();
   };
@@ -136,8 +136,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     walletAddress,
     isWalletConnected,
     
-    // USDC balance
-    usdcBalance,
+    // AVAX balance
+    avaxBalance,
     isLoadingBalance,
     
     // Methods

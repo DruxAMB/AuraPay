@@ -79,14 +79,15 @@ export async function fetchUSDCBalance(
       contract.methods.decimals().call()
     ]);
     
-    // Convert from wei to human readable format
-    const balanceFormatted = web3.utils.fromWei(
-      balance.toString().padStart(Number(decimals), '0'), 
-      'ether'
-    );
+    // Convert from smallest unit to human readable format
+    // USDC has 6 decimals, so divide by 10^6
+    const divisor = Math.pow(10, Number(decimals));
+    const balanceFormatted = Number(balance) / divisor;
+    
+    console.log('Raw balance:', balance.toString(), 'Decimals:', decimals, 'Formatted:', balanceFormatted);
     
     // Format to 2 decimal places
-    return parseFloat(balanceFormatted).toFixed(2);
+    return balanceFormatted.toFixed(2);
     
   } catch (error) {
     console.error('Error fetching USDC balance:', error);

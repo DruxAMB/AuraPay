@@ -1,23 +1,4 @@
-// Real Avalanche USDC transaction utilities
-
-// USDC contract ABI (minimal for transactions)
-const USDC_ABI = [
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', type: 'uint8' }],
-    type: 'function',
-  },
-  {
-    constant: false,
+// Real Avalanche AVAX transaction utilities
 
 // Avalanche network configuration
 const AVALANCHE_CONFIG = {
@@ -33,26 +14,20 @@ const AVALANCHE_CONFIG = {
   }
 };
 
-export interface TransactionParams {
+// Transaction parameters interface
+interface TransactionParams {
   to: string;
   amount: string;
   walletAddress: string;
   isTestnet?: boolean;
 }
 
-export interface TransactionResult {
-  hash: string;
-  success: boolean;
-  error?: string;
-  explorerUrl?: string;
-}
-
 /**
- * Send USDC transaction on Avalanche network
+ * Send native AVAX transaction
  * @param params - Transaction parameters
- * @returns Promise<TransactionResult> - Transaction result with hash
+ * @returns Promise<any> - Transaction result
  */
-export async function sendUSDCTransaction(params: TransactionParams): Promise<TransactionResult> {
+export async function sendAVAXTransaction(params: TransactionParams) {
   try {
     // Check if MetaMask is available
     if (!window.ethereum) {
@@ -103,30 +78,21 @@ export async function sendUSDCTransaction(params: TransactionParams): Promise<Tr
 
     const web3 = new Web3(window.ethereum);
     
-    // Create contract instance
-    const contract = new web3.eth.Contract(USDC_ABI, config.usdcContract);
-    
-    // Get decimals for proper amount conversion
-    const decimals = await contract.methods.decimals().call();
-    
-    // Convert amount to wei (USDC has 6 decimals)
-    const amountWei = web3.utils.toWei(params.amount, 'mwei'); // mwei = 6 decimals
-    
-    // Prepare transaction data
-    const transactionData = contract.methods.transfer(params.to, amountWei).encodeABI();
+    // Convert amount to wei
+    const amountWei = web3.utils.toWei(params.amount, 'ether');
     
     // Estimate gas
     const gasEstimate = await web3.eth.estimateGas({
       from: params.walletAddress,
-      to: config.usdcContract,
-      data: transactionData,
+      to: params.to,
+      value: amountWei,
     });
     
     // Send transaction
     const transactionParameters = {
       from: params.walletAddress,
-      to: config.usdcContract,
-      data: transactionData,
+      to: params.to,
+      value: amountWei,
       gas: Math.ceil(Number(gasEstimate) * 1.2).toString(), // Add 20% buffer
     };
 
@@ -135,7 +101,7 @@ export async function sendUSDCTransaction(params: TransactionParams): Promise<Tr
       params: [transactionParameters],
     });
 
-    console.log('USDC transaction sent:', txHash);
+    console.log('AVAX transaction sent:', txHash);
 
     return {
       hash: txHash,
@@ -144,7 +110,7 @@ export async function sendUSDCTransaction(params: TransactionParams): Promise<Tr
     };
 
   } catch (error: any) {
-    console.error('USDC transaction error:', error);
+    console.error('AVAX transaction error:', error);
     
     let errorMessage = 'Transaction failed';
     if (error.code === 4001) {
@@ -164,84 +130,93 @@ export async function sendUSDCTransaction(params: TransactionParams): Promise<Tr
 }
 
 /**
- * Check transaction status on blockchain
+ * Check transaction status
  * @param txHash - Transaction hash
  * @param isTestnet - Whether to use testnet or mainnet
- * @returns Promise<any> - Transaction receipt
+ * @returns Promise<any> - Transaction status
  */
 export async function checkTransactionStatus(txHash: string, isTestnet: boolean = false) {
   try {
     const config = isTestnet ? AVALANCHE_CONFIG.testnet : AVALANCHE_CONFIG.mainnet;
     
+    // Create Web3 instance
     const Web3 = (window as any).Web3;
     if (!Web3) {
       throw new Error('Web3 library not loaded');
     }
 
     const web3 = new Web3(config.rpcUrl);
+    
+    // Get transaction receipt
     const receipt = await web3.eth.getTransactionReceipt(txHash);
     
-    if (receipt) {
+    if (!receipt) {
       return {
-        confirmed: true,
-        success: receipt.status,
-        blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed,
+        status: 'pending',
+        confirmations: 0,
         explorerUrl: `${config.explorerUrl}/tx/${txHash}`
       };
-    } else {
-      return {
-        confirmed: false,
-        pending: true
-      };
     }
+
+    // Get current block number
+    const currentBlock = await web3.eth.getBlockNumber();
+    const confirmations = Number(currentBlock) - Number(receipt.blockNumber);
+
+    return {
+      status: receipt.status ? 'confirmed' : 'failed',
+      confirmations,
+      blockNumber: receipt.blockNumber,
+      gasUsed: receipt.gasUsed,
+      explorerUrl: `${config.explorerUrl}/tx/${txHash}`
+    };
+
   } catch (error) {
     console.error('Error checking transaction status:', error);
     return {
-      confirmed: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      status: 'unknown',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      explorerUrl: `${isTestnet ? AVALANCHE_CONFIG.testnet.explorerUrl : AVALANCHE_CONFIG.mainnet.explorerUrl}/tx/${txHash}`
     };
   }
 }
 
 /**
- * Get current network information
- * @returns Promise<any> - Network info
+ * Get network information
+ * @param isTestnet - Whether to get testnet or mainnet info
+ * @returns Network configuration
  */
-export async function getNetworkInfo() {
-  try {
-    if (!window.ethereum) {
-      throw new Error('MetaMask not available');
-    }
+export function getNetworkInfo(isTestnet: boolean = false) {
+  return isTestnet ? AVALANCHE_CONFIG.testnet : AVALANCHE_CONFIG.mainnet;
+}
 
+/**
+ * Validate if an address is a valid Ethereum/Avalanche address
+ * @param address - The address to validate
+ * @returns boolean - Whether the address is valid
+ */
+export function isValidAddress(address: string): boolean {
+  if (!address) return false;
+  
+  // Check if Web3 is available for validation
+  if (typeof window !== 'undefined' && (window as any).Web3) {
     const Web3 = (window as any).Web3;
-    if (!Web3) {
-      throw new Error('Web3 library not loaded');
-    }
-
-    const web3 = new Web3(window.ethereum);
-    
-    const [networkId, chainId, blockNumber] = await Promise.all([
-      web3.eth.net.getId(),
-      web3.eth.getChainId(),
-      web3.eth.getBlockNumber()
-    ]);
-
-    const isAvalanche = Number(chainId) === 43114 || Number(chainId) === 43113;
-    const isTestnet = Number(chainId) === 43113;
-
-    return {
-      networkId,
-      chainId,
-      blockNumber,
-      isAvalanche,
-      isTestnet,
-      networkName: isTestnet ? 'Avalanche Fuji Testnet' : 
-                   Number(chainId) === 43114 ? 'Avalanche Mainnet' : 
-                   'Unknown Network'
-    };
-  } catch (error) {
-    console.error('Error getting network info:', error);
-    return null;
+    const web3 = new Web3();
+    return web3.utils.isAddress(address);
   }
+  
+  // Basic validation if Web3 not available
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+/**
+ * Format AVAX amount with proper decimal places
+ * @param amount - The AVAX amount as string
+ * @returns string - Formatted amount
+ */
+export function formatAVAXAmount(amount: string): string {
+  const num = parseFloat(amount);
+  if (isNaN(num)) return '0.0000';
+  
+  // Format with 4 decimal places for AVAX
+  return num.toFixed(4);
 }

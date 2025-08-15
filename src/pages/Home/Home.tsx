@@ -106,7 +106,7 @@ export const Home = () => {
     isAuthenticated, 
     user, 
     walletAddress, 
-    usdcBalance, 
+    avaxBalance, 
     isLoadingBalance, 
     logout, 
     refreshBalance 
@@ -372,7 +372,7 @@ export const Home = () => {
                     <span>Loading...</span>
                   </div>
                 ) : (
-                  `${usdcBalance} USDC`
+                  `${avaxBalance} AVAX`
                 )
               )}
             </div>
